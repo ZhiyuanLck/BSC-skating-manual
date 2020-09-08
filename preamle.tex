@@ -1,0 +1,151 @@
+\usepackage{paracol}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{hobby}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{footnote}
+\usepackage{tabularx}
+\usepackage{multirow, makecell}
+\usepackage{multicol}
+\usepackage{caption}
+\usepackage{environ}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{siunitx}
+\usepackage{datatool}
+\usepackage{gbt7714}
+\usepackage{natbib}
+\usepackage{bibentry}
+\usepackage{tocbibind}
+\usepackage[toc, page]{appendix}
+\usepackage{xparse}
+\usepackage[hidelinks]{hyperref}
+\makesavenoteenv{tabular}
+\makesavenoteenv{table}
+\globalcounter{figure}
+\bibliographystyle{gbt7714-numerical}
+
+\hypersetup{
+  bookmarksopen,
+  CJKbookmarks,
+  linktocpage,
+  colorlinks,
+  linkcolor=teal,
+}
+
+\geometry{
+  left=2cm,
+  right=2cm,
+  top=2cm,
+  bottom=2cm,
+}
+\setlist[itemize]{
+  % align=left,
+  topsep=5pt,
+  itemsep=\parskip,
+  font=\bfseries,
+}
+
+
+\renewcommand\figureautorefname{图}
+\renewcommand\appendixautorefname{附录}
+\renewcommand\appendixtocname{附录}
+\renewcommand\appendixpagename{附录}
+\settocbibname{参考文献}
+\newtcolorbox{intro}[1][]{#1}
+% \newcommand\bsctype[2][4]
+\NewDocumentCommand { \bsctype } { D(){4} +O{} m }
+  {
+    \noindent
+    \tcbox[
+      colframe=teal, colback=teal!10,on line,
+      arc=0pt, outer arc=0pt,
+      boxsep=0pt, top=2pt, bottom=2pt, left=1pt, right=1pt,
+      boxrule=0pt, toprule=1pt, bottomrule=1pt,
+      fontupper=\itshape, width=\dimexpr#1\ccwd+2pt,
+      tcbox width=forced center, #2
+      ]
+      {#3}
+    \hspace{5pt}\ignorespaces
+  }
+
+\makeatletter
+\newif\ifxtick@rotate
+\tikzset{
+  img/.cd,
+  x/.store in=\img@x,
+  y/.store in=\img@y,
+  node/.store in=\img@node,
+}
+\tikzdeclarecoordinatesystem{img}
+{%
+  \tikzset{img/.cd,#1}%
+  \tikz@scan@one@point\pgf@process(\img@node.south west)
+  \pgf@xa=\pgf@x
+  \pgf@ya=\pgf@y
+  \tikz@scan@one@point\pgf@process(\img@node.north east)
+  \pgfmathparse{(1-(\img@x))*\pgf@xa+(\img@x)*\pgf@x}
+  \pgf@x=\pgfmathresult pt
+  \pgfmathparse{(1-(\img@y))*\pgf@ya+(\img@y)*\pgf@y}
+  \pgf@y=\pgfmathresult pt
+}%
+\NewDocumentCommand {\picgrid} {O{10} O{10} D(){} O{}} {
+  \pgfkeys{/pgf/number format/.cd,fixed,fixed zerofill,precision=2}
+  \foreach \i [evaluate=\i as \x using \i/#1] in {0,...,#1}
+  \draw[#4]
+    (img cs:node=#3, x=\x, y=0)
+    node[rotate=-90, anchor=west] {\pgfmathprintnumber{\x}}
+    -- (img cs:node=#3, x=\x, y=1);
+  \foreach \i [evaluate=\i as \y using \i/#2] in {0,...,#2}
+  \draw[#4]
+    (img cs:node=#3, y=\y, x=0)
+    node[left] {\pgfmathprintnumber{\y}}
+    -- (img cs:node=#3, y=\y, x=1);
+}
+
+\newlength\widest
+\NewEnviron{ldescription}{%
+  \vbox{%
+    \global\setlength\widest{0pt}%
+    \def\item[##1]{%
+      \settowidth\@tempdima{\textbf{##1}}%
+      \ifdim\@tempdima>\widest\global\setlength\widest{\@tempdima}\fi%
+    }%
+    \setbox0=\hbox{\BODY}%
+  }
+  \begin{description}[
+    leftmargin=\dimexpr\widest+0.5em\relax,
+    labelindent=0pt,
+    labelwidth=\widest,
+    before=\begin{multicols}{2},
+    after=\end{multicols}
+    ]
+  \BODY
+  \end{description}%
+}
+\makeatother
+
+\newcommand{\sortitem}[2]{%
+  \DTLnewrow{list}% Create a new entry
+  \DTLnewdbentry{list}{label}{#1}
+  \DTLnewdbentry{list}{description}{#2}
+}
+\newenvironment{sortedlist}{%
+  \DTLifdbexists{list}{\DTLcleardb{list}}{\DTLnewdb{list}}% Create new/discard old list
+}{%
+  \DTLsort*{label}{list}% Sort list
+  \begingroup
+  % \small
+  % \begin{ldescription}
+  \begin{description}[
+    labelindent=0pt,
+    labelwidth=.5\linewidth,
+    nosep,
+    font=\sffamily\bfseries,
+    ]
+    \DTLforeach*{list}{\mylabel=label, \mydesc=description}{%
+    \item[\mylabel] \mydesc}% Print each item
+  \end{description}%
+  \endgroup
+}
